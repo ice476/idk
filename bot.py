@@ -33,17 +33,17 @@ async def on_message(message: discord.Message):
         if welcome_channel:
             await welcome_channel.send("Bienvenue sur le discord")
 
-@bot.tree.command(name="test", description="Tester les embeds")
+@bot.tree.command(name="staff", description="Demande de staff")
 async def test(interaction: discord.Interaction, member: discord.Member):
     embed = discord.Embed(
-        title="Test Title",
+        title="Rejoignez l'équipe de T-Shirt",
         description="Description de l'embed",
         color=discord.Color.blue()
     )
     embed.add_field(name="Python", value="embed add field python value", inline=False)
     embed.add_field(name="Wev", value="embed add field wev value", inline=False)
-    embed.set_footer(text="Pied de page")
-    embed.set_image(url="https://i.pinimg.com/236x/3a/80/77/3a80778feac905d3772bc16e23b34f8a.jpg")
+    embed.set_footer(text="Cordialement")
+    embed.set_image(url="file:///C:/Users/D'Andrea/Downloads/da_vinci_code.png")
 
     await interaction.response.send_message(embed=embed)
 
@@ -62,4 +62,6 @@ async def warnguy(interaction: discord.Interaction, member: discord.Member):
 async def youtube(interaction: discord.Interaction):
     await interaction.response.send_message("Voici le lien de ma chaine : https://www.youtube.com/@Nawkini")
 
-bot.run(os.getenv('DISCORD_TOKEN'))
+print("TOKEN =", os.getenv("DISCORD_TOKEN"))
+
+bot.run(os.getenv("DISCORD_TOKEN"))
