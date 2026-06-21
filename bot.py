@@ -34,14 +34,15 @@ async def on_message(message: discord.Message):
             await welcome_channel.send("Bienvenue sur le discord")
 
 @bot.tree.command(name="staff", description="Demande de staff")
-async def test(interaction: discord.Interaction, member: discord.Member):
+async def staff(interaction: discord.Interaction, member: discord.Member):
     embed = discord.Embed(
         title="Rejoignez l'équipe de T-Shirt",
         description="Description de l'embed",
         color=discord.Color.blue()
     )
-    embed.add_field(name="Python", value="embed add field python value", inline=False)
-    embed.add_field(name="Wev", value="embed add field wev value", inline=False)
+    embed.add_field(name="Age minimum", value="pour devenir staff minimum 15ans", inline=False)
+    embed.add_field(name="Activité", value="3h de vocal ou 200 messages", inline=False)
+    embed.add_field(name="Clean", value="Pour finir faut être clean 0 sanction", inline=False)
     embed.set_footer(text="Cordialement")
     embed.set_image(url="file:///C:/Users/D'Andrea/Downloads/da_vinci_code.png")
 
