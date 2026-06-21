@@ -37,12 +37,13 @@ async def on_message(message: discord.Message):
 async def staff(interaction: discord.Interaction, member: discord.Member):
     embed = discord.Embed(
         title="Rejoignez l'équipe de T-Shirt",
-        description="Description de l'embed",
+        description="T-Shirt recrute du personnel. voici les conditions :",
         color=discord.Color.blue()
     )
     embed.add_field(name="Age minimum", value="pour devenir staff minimum 15ans", inline=False)
-    embed.add_field(name="Activité", value="3h de vocal ou 200 messages", inline=False)
+    embed.add_field(name="Activité", value="5h de vocal ou 500 messages", inline=False)
     embed.add_field(name="Clean", value="Pour finir faut être clean 0 sanction", inline=False)
+    embed.add_field(name="", value="Si vous souhaitez devenir Staff, contactez une personne haut gradée.", inline=False)
     embed.set_footer(text="Cordialement")
     embed.set_image(url="https://i.pinimg.com/webp85/1200x/a8/84/a8/a884a8c972360381071e972f1a6b659e.webp")
 
