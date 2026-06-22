@@ -43,6 +43,7 @@ async def help(ctx):
     embed.add_field(name="/warnguy", value="/warnguy @utilisateur donne un avertissement et attribue un rôle à l'utilisateur.")
     embed.add_field(name="/banguy", value="/banguy @utilisateur permet de bannir instantanément un utilisateur du serveur.")
 
+    await ctx.send(embed=embed)
 
 @bot.tree.command(name="staff", description="Demande de staff")
 async def staff(interaction: discord.Interaction, member: discord.Member):
@@ -66,10 +67,11 @@ async def warnguy(interaction: discord.Interaction, member: discord.Member):
     await member.send("Tu as reçu une alerte")
 
 @bot.tree.command(name="banguy", description="Bannir une personne")
-async def warnguy(interaction: discord.Interaction, member: discord.Member, reason: str):
+async def banguy(interaction: discord.Interaction, member: discord.Member, reason: str):
     await interaction.response.send_message("Ban envoyé !")
     await member.send(f"Tu as été banni\nRaison : {reason}")
     await member.send("Tu as été banni") 
+    await member.ban(reason=reason)
 
 @bot.tree.command(name="youtube", description="Affiche ma chaine youtube")
 async def youtube(interaction: discord.Interaction):
