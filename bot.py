@@ -7,6 +7,8 @@ load_dotenv()
 print("Lancement du bot...")
 bot = commands.Bot(command_prefix=["!", "+"], intents=discord.Intents.all())
 
+bot.remove_command("help")
+
 @bot.event
 async def on_ready():
     print("Bot allumé !")
@@ -33,17 +35,7 @@ async def on_message(message: discord.Message):
         if welcome_channel:
             await welcome_channel.send("Bienvenue sur le discord")
 
-@bot.command()
-async def help(ctx):
-    embed = discord.Embed(name="help", description="Toute les commandes")
-    embed = discord.Embed(
-        title="Les commandes",
-        description=""
-    )
-    embed.add_field(name="/warnguy", value="/warnguy @utilisateur donne un avertissement et attribue un rôle à l'utilisateur.")
-    embed.add_field(name="/banguy", value="/banguy @utilisateur permet de bannir instantanément un utilisateur du serveur.")
-
-    await ctx.send(embed=embed)
+    await bot.process_commands(message)
 
 @bot.tree.command(name="staff", description="Demande de staff")
 async def staff(interaction: discord.Interaction, member: discord.Member):
