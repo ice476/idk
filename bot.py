@@ -25,7 +25,7 @@ async def help(ctx):
 @bot.event
 async def on_ready():
     print("Bot allumé !")
-    # Synchroniser les commandes
+    
     try:
         #sync
         synced = await bot.tree.sync()
@@ -36,7 +36,7 @@ async def on_ready():
 @bot.event
 async def on_message(message: discord.Message):
 
-    # empêcher le bot de se déclencher lui-même
+
     if message.author.bot:
         return
 
@@ -70,6 +70,32 @@ class TicketView(discord.ui.View):
         await ticket_channel.send(f"Bonjour {user.mention} ! Un membre du staff va s'occuper de vous. Expliquez votre problème ici.")
         
         await interaction.response.send_message(f"Votre ticket a été créé ici : {ticket_channel.mention}", ephemeral=True)
+
+
+@bot.event
+async def on_ready():
+    bot.add_view(TicketView())
+    print(f"Connecté en tant que {bot.user}")
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    await bot.process_commands(message)
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_ticket(ctx):
+    await ctx.message.delete()
+    
+    embed = discord.Embed(
+        title="Système de Support",
+        description="Cliquez sur le bouton ci-dessous pour contacter l'équipe.",
+        color=discord.Color.blue()
+    )
+
+    await ctx.send(embed=embed, view=TicketView())
 
 
 @bot.tree.command(name="staff", description="Demande de staff")
