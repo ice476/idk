@@ -9,12 +9,17 @@ bot = commands.Bot(command_prefix=["!", "+"], intents=discord.Intents.all(), hel
 
 @bot.command()
 async def help(ctx):
-    embed = discord.Embed(title="Toutes les commands")
+    embed = discord.Embed(
+        title="Toutes les commands",
+        description=" ",
+        color=discord.Color.blue())
 
     embed.add_field(name=" ", value="/youtube", inline=False)
     embed.add_field(name=" ", value="/warnguy", inline=False)
     embed.add_field(name=" ", value="/banguy", inline=False)
     embed.add_field(name=" ", value="/staff", inline=False)
+
+    await ctx.send(embed=embed)
 
 
 @bot.event
