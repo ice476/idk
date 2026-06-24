@@ -50,6 +50,28 @@ async def on_message(message: discord.Message):
 
     await bot.process_commands(message)
 
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Créer un ticket 📩", style=discord.ButtonStyle.blurple, custom_id="click_ticket")
+    async def create_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        user = interaction.user
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+        }
+
+        channel_name = f"ticket-{user.name}"
+        ticket_channel = await guild.create_text_channel(name=channel_name, overwrites=overwrites)
+
+        await ticket_channel.send(f"Bonjour {user.mention} ! Un membre du staff va s'occuper de vous. Expliquez votre problème ici.")
+        
+        await interaction.response.send_message(f"Votre ticket a été créé ici : {ticket_channel.mention}", ephemeral=True)
+
+
 @bot.tree.command(name="staff", description="Demande de staff")
 async def staff(interaction: discord.Interaction, member: discord.Member):
     embed = discord.Embed(
