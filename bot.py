@@ -5,8 +5,16 @@ from discord.ext import commands
 load_dotenv()
 
 print("Lancement du bot...")
-bot = commands.Bot(command_prefix=["!", "+"], intents=discord.Intents.all())
+bot = commands.Bot(command_prefix=["!", "+"], intents=discord.Intents.all(), help_command=None)
 
+@bot.command()
+async def help(ctx):
+    embed = discord.Embed(title="Toutes les commands")
+
+    embed.add_field(name=" ", value="/youtube", inline=False)
+    embed.add_field(name=" ", value="/warnguy", inline=False)
+    embed.add_field(name=" ", value="/banguy", inline=False)
+    embed.add_field(name=" ", value="/staff", inline=False)
 
 
 @bot.event
