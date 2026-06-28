@@ -97,7 +97,7 @@ async def setup_ticket(ctx):
 
     await ctx.send(embed=embed, view=TicketView())
     
-    
+
     print(self.bot.user.name)
 
 @bot.event
@@ -109,7 +109,7 @@ async def on_member_join(member):
     if channel:
         await channel.send(f"🎉 Bienvenue {member.mention} sur le serveur ! Installe-toi bien !")
 
-bot.run("DISCORD_TOKEN")
+
 
 @bot.tree.command(name="staff", description="Demande de staff")
 async def staff(interaction: discord.Interaction, member: discord.Member):
