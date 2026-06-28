@@ -107,7 +107,7 @@ async def on_member_join(member):
     channel = bot.get_channel(ID_DU_SALON)
     
     if channel:
-        await channel.send(f"🎉 Bienvenue {member.mention} sur le serveur ! Installe-toi bien !")
+        await channel.send(f"Bienvenue {member.mention} sur le serveur ! Viens discuter dans le chat !")
 
 
 
