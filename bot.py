@@ -34,72 +34,62 @@ async def on_ready():
     except Exception as e:
             print(e)
 
-@bot.event
-async def on_message(message: discord.Message):
+class TicketCloseView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None) # timeout=None pour que le bouton reste actif indéfiniment
 
-
-    if message.author.bot:
-        return
-
-    if message.content.lower() == "bonjour":
-        await message.author.send("Comment tu vas ?")
-
-    if message.content.lower() == "bienvenue":
-        welcome_channel = bot.get_channel(1518033190428610771)
-        if welcome_channel:
-            await welcome_channel.send("Bienvenue sur le discord")
-
-    await bot.process_commands(message)
+    @discord.ui.button(label="Fermer le ticket", style=discord.ButtonStyle.red, custom_id="close_ticket")
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Supprime le salon du ticket
+        await interaction.response.send_message("Fermeture du ticket...", ephemeral=True)
+        await interaction.channel.delete()
 
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Créer un ticket 📩", style=discord.ButtonStyle.blurple, custom_id="click_ticket")
-    async def create_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(label="Créer un ticket", style=discord.ButtonStyle.green, custom_id="create_ticket")
+    async def ticket_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
-        user = interaction.user
+        member = interaction.user
 
+        # Configuration des permissions pour le salon privé
         overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            guild.default_role: discord.PermissionOverwrite(read_messages=False), # Personne ne voit
+            member: discord.PermissionOverwrite(read_messages=True, send_messages=True), # Sauf le membre
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True) # Et le bot
         }
 
-        channel_name = f"ticket-{user.name}"
-        ticket_channel = await guild.create_text_channel(name=channel_name, overwrites=overwrites)
+        # Création du salon textuel personnalisé
+        channel = await guild.create_text_channel(
+            name=f"ticket-{member.name}", 
+            overwrites=overwrites,
+            reason=f"Ticket ouvert par {member.name}"
+        )
 
-        await ticket_channel.send(f"Bonjour {user.mention} ! Un membre du staff va s'occuper de vous. Expliquez votre problème ici.")
-        
-        await interaction.response.send_message(f"Votre ticket a été créé ici : {ticket_channel.mention}", ephemeral=True)
+        # Message de confirmation éphémère (que seul le membre voit)
+        await interaction.response.send_message(f"Votre ticket a été créé ici : {channel.mention}", ephemeral=True)
+
+        # Message d'accueil à l'intérieur du ticket avec le bouton de fermeture
+        embed = discord.Embed(
+            title="Ticket Ouvert",
+            description=f"Bonjour {member.mention},\nUn membre de l'équipe va s'occuper de vous. Cliquez sur le bouton ci-dessous pour fermer ce ticket si votre problème est résolu.",
+            color=discord.Color.green()
+        )
+        await channel.send(embed=embed, view=TicketCloseView())
 
 
-@bot.event
-async def on_ready():
-    bot.add_view(TicketView())
-    print(f"Connecté en tant que {bot.user}")
-
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    await bot.process_commands(message)
-
-@bot.command()
+# --- COMMANDE POUR ENVOYER LE SYSTÈME DE TICKET ---
+@bot.tree.command(name="setup_ticket", description="Installe le système de ticket dans ce salon")
 @commands.has_permissions(administrator=True)
-async def setup_ticket(ctx):
-    await ctx.message.delete()
-    
+async def setup_ticket(interaction: discord.Interaction):
     embed = discord.Embed(
-        title="Système de Support",
-        description="Cliquez sur le bouton ci-dessous pour contacter l'équipe.",
+        title="Besoin d'aide ?",
+        description="Cliquez sur le bouton ci-dessous pour ouvrir un ticket de support privé.",
         color=discord.Color.blue()
     )
-
-    await ctx.send(embed=embed, view=TicketView())
-    
-
-    print(self.bot.user.name)
+    # Envoie l'embed avec le bouton de création
+    await interaction.response.send_message(embed=embed, view=TicketView())
 
 @bot.event
 async def on_member_join(member):
@@ -145,7 +135,10 @@ async def on_member_join(member):
     channel = bot.get_channel(ID_SALON_STAFF)
     
     if channel:
-        await channel.send(f"Hey {member.mention} ! Regarde les conditions ci-dessus si tu veux rejoindre le staff !")
+        await channel.send(
+            f"{member.mention}",
+            delete_after=1
+        )
 
 
 @bot.tree.command(name="warnguy", description="Alert une personne")
