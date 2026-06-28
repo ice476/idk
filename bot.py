@@ -18,7 +18,7 @@ async def help(ctx):
     embed.add_field(name="⠀", value="/youtube", inline=False)
     embed.add_field(name="⠀", value="/warnguy", inline=False)
     embed.add_field(name="⠀", value="/banguy", inline=False)
-    embed.add_field(name="⠀", value="/staff", inline=False)
+
 
     await ctx.send(embed=embed)
 
@@ -45,6 +45,55 @@ async def on_member_join(member):
     if channel:
         await channel.send(f"Bienvenue {member.mention} sur le serveur ! Viens discuter dans le chat !")
 
+@bot.event
+async def on_ready():
+    ID_SALON_PUB = 1518709316818043001
+    channel = bot.get_channel(ID_SALON_PUB)
+    
+    if channel:
+        messages = [msg async for msg in channel.history(limit=1)]
+        
+        if not messages:
+            texte_pub = """Tu cherches un endroit cool pour discuter, rencontrer du monde et jouer ensemble ?
+Rejoins T shirt, une communauté conviviale où bonne humeur et gaming sont au rendez-vous !
+
+Discussions libres et respectueuses
+Sessions de jeux entre membres
+Délires, memes et ambiance détendue
+Une communauté active et accueillante
+
+Que tu sois casual ou tryhard, tu as ta place ici ! Rejoins-nous et fais partie de l’aventure T shirt dès maintenant Au 5 invites au rôles !! 
+
+https://discord.gg/PM6Zsca8xe
+
+Si vous aimez le serveur T shirt , n’hésitez pas à en parler autour de vous ou à inviter vos amis
+Plus on est nombreux, plus l’ambiance sera folle @everyone"""
+
+            await channel.send(content=texte_pub)
+            print("Message envoyé avec succès avec le ping et le lien !")
+            
+    print(f"Bot connecté sous le nom de : {bot.user.name}")
+
+@bot.event
+async def on_member_update(before, after):
+    if before.premium_since_current_amount < after.premium_since_current_amount:
+        
+        ID_SALON_BOOST = 1519027720367898835
+        channel = bot.get_channel(ID_SALON_BOOST)
+        
+        if channel:
+            nb_boosts_membre = after.premium_since_current_amount
+            
+            embed = discord.Embed(
+                title="Un énorme MERCI !",
+                description=f"{after.mention}\n\n"
+                            f"Tu as donné **{nb_boosts_membre}** boost(s) à ce serveur. "
+                            f"Merci pour ton soutien ! ",
+                color=discord.Color.fuchsia()
+            )
+            embed.set_thumbnail(url=after.display_avatar.url)
+            
+            await channel.send(embed=embed)
 
 
 @tasks.loop(hours=720)
