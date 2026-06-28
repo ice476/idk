@@ -1,5 +1,6 @@
 import discord
 import os
+import time
 from dotenv import load_dotenv
 from discord.ext import tasks, commands
 
@@ -74,26 +75,57 @@ async def message_recrutement_mensuel():
 
 # --- UNIFICATION DU ON_READY ---
 
+
+@bot.event
+async def on_ready():
+    print(f"Bot connecté sous le nom de : {bot.user.name}")
+
+    activity = discord.Activity(
+        type=discord.ActivityType.playing,
+        name="T-shirt",  
+        
+        details="Good Vibes", 
+        
+        state="Dev bi 9vibe", 
+        
+        timestamps={
+            "end": int(time.time()) + 3600  
+        },
+        
+        party={
+            "size": [4, 5] 
+        },
+        
+        assets={
+            "large_image": "image_principale",  
+            "large_text": "T-shirt Communauté",  
+            "small_image": "petit_logo",        
+            "small_text": "Vibe"                
+        }
+    )
+
+    await bot.change_presence(status=discord.Status.online, activity=activity)
+
 @bot.event
 async def on_ready():
     print(f"Bot connecté sous le nom de : {bot.user.name}")
     
-    # 1. Synchronisation des commandes Slash
+
     try:
         synced = await bot.tree.sync()
         print(f"Commandes slash synchronisées : {len(synced)}")
     except Exception as e:
         print(f"Erreur sync : {e}")
 
-    # 2. Démarrage de la boucle de recrutement
+
     if not message_recrutement_mensuel.is_running():
         message_recrutement_mensuel.start()
 
-    # 3. Enregistrement des vues persistantes pour les tickets
+
     bot.add_view(TicketView())
     bot.add_view(TicketCloseView())
     
-    # 4. Message automatique du Salon Ticket
+
     ID_SALON_TICKET = 1518340932813062215 
     channel_ticket = bot.get_channel(ID_SALON_TICKET)
     if channel_ticket:
@@ -107,7 +139,7 @@ async def on_ready():
             await channel_ticket.send(embed=embed, view=TicketView())
             print("Panneau de ticket automatique envoyé avec succès !")
 
-    # 5. Message de Publicité (Ce qui bloquait chez toi !)
+
     ID_SALON_PUB = 1518709316818043001
     channel_pub = bot.get_channel(ID_SALON_PUB)
     if channel_pub:
@@ -136,17 +168,18 @@ Plus on est nombreux, plus l’ambiance sera folle @everyone"""
 
 @bot.event
 async def on_member_join(member):
-    # Message de bienvenue général
+
     ID_DU_SALON = 1518341039499378739  
     channel = bot.get_channel(ID_DU_SALON)
     if channel:
         await channel.send(f"Bienvenue {member.mention} sur le serveur ! Viens discuter dans le chat !")
         
-    # Mention fantôme / log dans le salon staff
+
     ID_SALON_STAFF = 1518366776952623357
     channel_staff = bot.get_channel(ID_SALON_STAFF)
     if channel_staff:
         await channel_staff.send(f"{member.mention}", delete_after=1)
+
 
 @bot.event
 async def on_member_update(before, after):
@@ -174,19 +207,58 @@ async def help(ctx):
     embed = discord.Embed(title="Toutes les commandes", description="⠀", color=discord.Color.blue())
     embed.add_field(name="⠀", value="/youtube", inline=False)
     embed.add_field(name="⠀", value="/warnguy", inline=False)
-    embed.add_field(name="⠀", value="/banguy", inline=False)
+    embed.add_field(name="⠀", value="+ban", inline=False)
+    embed.add_field(name="⠀", value="+clear", inline=False)
+    embed.add_field(name="⠀", value="+warn", inline=False)
     await ctx.send(embed=embed)
 
-@bot.tree.command(name="warnguy", description="Alerte une personne")
-async def warnguy(interaction: discord.Interaction, member: discord.Member):
-    await interaction.response.send_message("Alerte envoyée !")
-    await member.send("Tu as reçu une alerte")
+@bot.command()
+@commands.has_permissions(manage_channels=True)
+async def clear(ctx):
+    channel = ctx.channel
+    category = channel.category
+    position = channel.position
 
-@bot.tree.command(name="banguy", description="Bannir une personne")
-async def banguy(interaction: discord.Interaction, member: discord.Member, reason: str):
-    await interaction.response.send_message("Ban envoyé !")
-    await member.send(f"Tu as été banni\nRaison : {reason}")
-    await member.ban(reason=reason)
+    new_channel = await channel.clone(reason=f"Salon vidé par {ctx.author}")
+
+    await new_channel.edit(position=position, category=category)
+
+    await channel.delete(reason=f"Salon vidé par {ctx.author}")
+
+@bot.command()
+@commands.has_permissions(ban_members=True)
+@commands.bot_has_permissions(ban_members=True)
+async def ban(ctx, user_id: int, *, raison="Aucune raison fournie"):
+    try:
+        user = await bot.fetch_user(user_id)
+        await ctx.guild.ban(user, reason=raison)
+
+        await ctx.send(f"✅ **{user}** (`{user.id}`) a été banni.\nRaison : {raison}")
+
+    except discord.NotFound:
+        await ctx.send("❌ Utilisateur introuvable.")
+    except discord.Forbidden:
+        await ctx.send("❌ Je n'ai pas la permission de bannir cet utilisateur.")
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : `{e}`")
+
+@bot.command()
+@commands.has_permissions(moderate_members=True)
+async def warn(ctx, user_id: int, *, raison="Aucune raison fournie"):
+    try:
+        user = await bot.fetch_user(user_id)
+
+        await ctx.send(
+            f"⚠️ **{user}** (`{user.id}`) a reçu un avertissement.\n"
+            f"Raison : {raison}"
+        )
+
+    except discord.NotFound:
+        await ctx.send("❌ Utilisateur introuvable.")
+
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : {e}")
+
 
 @bot.tree.command(name="youtube", description="Affiche ma chaine youtube")
 async def youtube(interaction: discord.Interaction):
