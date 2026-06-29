@@ -102,7 +102,7 @@ async def on_ready():
 
     print(f"Connecté en tant que {bot.user.name}")
     print(f"Bot connecté sous le nom de : {bot.user.name}")
-
+    await bot.add_cog(MusicBot(bot))
 
     nom_activite = "T-shirt | Dev by 9vibe (1 sur 5) | 0 restante"
     await bot.change_presence(activity=discord.Game(name=nom_activite))
@@ -207,6 +207,11 @@ async def on_member_update(before, after):
             embed.set_thumbnail(url=after.display_avatar.url)
             await channel.send(embed=embed)
 
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+    await bot.process_commands(message)
 
 # --- COMMANDES PREFIX & SLASH ---
 
