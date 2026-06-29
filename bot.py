@@ -1,6 +1,8 @@
 import discord
 import os
 import time
+import yt_dlp
+import asyncio
 import datetime
 from dotenv import load_dotenv
 from discord.ext import tasks, commands
@@ -9,6 +11,21 @@ load_dotenv()
 
 print("Lancement du bot...")
 bot = commands.Bot(command_prefix=["!", "+"], intents=discord.Intents.all(), help_command=None)
+
+YTDL_OPTIONS = {
+    'format': 'bestaudio/best',
+    'noplaylist': True,
+    'quiet': True,
+}
+FFMPEG_OPTIONS = {
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+    'options': '-vn',
+}
+
+class MusicBot(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.queue = []
 
 # --- VUES POUR LES TICKETS ---
 
@@ -189,6 +206,85 @@ async def on_member_update(before, after):
 
 
 # --- COMMANDES PREFIX & SLASH ---
+
+class MusicBot(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.queue = []  
+
+    @commands.command(name='play')
+    async def play(self, ctx, *, search: str):
+        """Ajoute une musique à la queue et la joue si rien n'est en cours."""
+        if not ctx.author.voice:
+            return await ctx.send("Tu dois être dans un salon vocal pour faire ça !")
+
+        voice_channel = ctx.author.voice.channel
+
+        if not ctx.voice_client:
+            await voice_channel.connect()
+        
+        await ctx.send(f"🔍 Recherche de `{search}`...")
+
+        with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ytdl:
+            try:
+                info = ytdl.extract_info(f"ytsearch:{search}", download=False)['entries'][0]
+                url = info['url']
+                title = info['title']
+            except Exception as e:
+                return await ctx.send("Impossible de trouver ou de lire cette musique.")
+
+        self.queue.append({'url': url, 'title': title})
+        await ctx.send(f"🎵 Ajouté à la file : **{title}**")
+
+        if not ctx.voice_client.is_playing():
+            self.play_next(ctx)
+
+    def play_next(self, ctx):
+        """Fonction pour jouer la musique suivante dans la queue."""
+        if len(self.queue) > 0:
+            song = self.queue.pop(0)
+            url = song['url']
+            title = song['title']
+
+            source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS)
+            ctx.voice_client.play(source, after=lambda e: self.play_next(ctx))
+            
+            self.bot.loop.create_task(ctx.send(f"🎶 En train de jouer : **{title}**"))
+        else:
+            pass
+
+    @commands.command(name='skip')
+    async def skip(self, ctx):
+        """Passe à la musique suivante."""
+        if ctx.voice_client and ctx.voice_client.is_playing():
+            ctx.voice_client.stop()  
+            await ctx.send("⏭️ Musique passée !")
+        else:
+            await ctx.send("Aucune musique n'est en cours de lecture.")
+
+    @commands.command(name='stop')
+    async def stop(self, ctx):
+        """Arrête la musique, vide la queue et déconnecte le bot."""
+        self.queue.clear()
+        if ctx.voice_client:
+            await ctx.voice_client.disconnect()
+            await ctx.send("🛑 Musique arrêtée et déconnexion.")
+        else:
+            await ctx.send("Je ne suis pas connecté à un salon vocal.")
+
+    @commands.command(name='queue')
+    async def queue_list(self, ctx):
+        """Affiche la liste des musiques à venir."""
+        if len(self.queue) == 0:
+            return await ctx.send("La file d'attente est vide.")
+
+        embed = discord.Embed(title="📋 File d'attente", color=discord.Color.blue())
+        description = ""
+        for i, song in enumerate(self.queue, start=1):
+            description += f"{i}. **{song['title']}**\n"
+        
+        embed.description = description
+        await ctx.send(embed=embed)
 
 @bot.command()
 @commands.has_permissions(manage_messages=True)
