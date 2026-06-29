@@ -54,7 +54,7 @@ class TicketView(discord.ui.View):
 
 @tasks.loop(hours=720)
 async def message_recrutement_mensuel():
-    ID_SALON_STAFF = 1518366776952623357
+    ID_SALON_STAFF = 1521077673663660165
     channel = bot.get_channel(ID_SALON_STAFF)
     
     if channel:
@@ -78,22 +78,22 @@ async def message_recrutement_mensuel():
 
 @bot.event
 async def on_ready():
-    # 1. Messages de confirmation dans la console
+
     print(f"Connecté en tant que {bot.user.name}")
     print(f"Bot connecté sous le nom de : {bot.user.name}")
 
-    # 2. Configuration de l'activité (Statut du bot)
+
     nom_activite = "T-shirt | Dev by 9vibe (1 sur 5) | 0 restante"
     await bot.change_presence(activity=discord.Game(name=nom_activite))
 
-    # 3. Synchronisation des commandes Slash (Tree)
+
     try:
         synced = await bot.tree.sync()
         print(f"Commandes slash synchronisées : {len(synced)}")
     except Exception as e:
         print(f"Erreur sync : {e}")
 
-    # 4. Lancement de la tâche de recrutement (si elle existe)
+
     try:
         if not message_recrutement_mensuel.is_running():
             message_recrutement_mensuel.start()
@@ -102,8 +102,7 @@ async def on_ready():
             "Note : La tâche 'message_recrutement_mensuel' n'est pas encore définie dans ce script."
         )
 
-    # 5. Enregistrement des vues persistantes pour les boutons (Tickets)
-    # Note : Assure-toi que TicketView et TicketCloseView sont bien importés/définis plus haut
+
     try:
         bot.add_view(TicketView())
         bot.add_view(TicketCloseView())
@@ -112,7 +111,7 @@ async def on_ready():
             "Note : TicketView ou TicketCloseView ne sont pas définis dans ce script."
         )
 
-    # 6. Vérification et envoi automatique du panneau de Ticket
+
     ID_SALON_TICKET = 1518340932813062215
     channel_ticket = bot.get_channel(ID_SALON_TICKET)
     if channel_ticket:
@@ -126,7 +125,7 @@ async def on_ready():
             await channel_ticket.send(embed=embed, view=TicketView())
             print("Panneau de ticket automatique envoyé avec succès !")
 
-    # 7. Vérification et envoi automatique du message de Publicité
+
     ID_SALON_PUB = 1518709316818043001
     channel_pub = bot.get_channel(ID_SALON_PUB)
     if channel_pub:
