@@ -158,7 +158,7 @@ async def on_member_join(member):
         await channel.send(f"Bienvenue {member.mention} sur le serveur ! Viens discuter dans le chat !")
         
 
-    ID_SALON_STAFF = 1518366776952623357
+    ID_SALON_STAFF = 1521077673663660165
     channel_staff = bot.get_channel(ID_SALON_STAFF)
     if channel_staff:
         await channel_staff.send(f"{member.mention}", delete_after=1)
