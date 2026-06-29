@@ -79,15 +79,11 @@ async def message_recrutement_mensuel():
 @bot.event
 async def on_ready():
     print(f"Connecté en tant que {bot.user.name}")
-    
-    activity = discord.Activity(
-        type=discord.ActivityType.playing,
-        name="T-shirt",                         
-        details="Dev by 9vibe (1 sur 5)",       
-        state="0: restantes0 restante"          
-    )
-    
-    await bot.change_presence(activity=activity)
+
+    # Pour un bot, on fusionne les infos dans le nom de l'activité
+    nom_activite = "T-shirt | Dev by 9vibe (1 sur 5) | 0 restante"
+
+    await bot.change_presence(activity=discord.Game(name=nom_activite))
 
 @bot.event
 async def on_ready():
