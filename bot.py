@@ -206,7 +206,6 @@ async def on_member_update(before, after):
 async def help(ctx):
     embed = discord.Embed(title="Toutes les commandes", description="⠀", color=discord.Color.blue())
     embed.add_field(name="⠀", value="/youtube", inline=False)
-    embed.add_field(name="⠀", value="/warnguy", inline=False)
     embed.add_field(name="⠀", value="+ban", inline=False)
     embed.add_field(name="⠀", value="+clear", inline=False)
     embed.add_field(name="⠀", value="+warn", inline=False)
