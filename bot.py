@@ -1,6 +1,7 @@
 import discord
 import os
 import time
+import datetime
 from dotenv import load_dotenv
 from discord.ext import tasks, commands
 
@@ -189,6 +190,24 @@ async def on_member_update(before, after):
 
 # --- COMMANDES PREFIX & SLASH ---
 
+@bot.command()
+@commands.has_permissions(manage_messages=True)
+async def say(ctx, *, message: str):
+    try:
+        await ctx.message.delete()
+    except discord.Forbidden:
+        pass
+
+    await ctx.send(message)
+
+
+@say.error
+async def say_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send(
+            "❌ Tu n'as pas la permission d'utiliser cette commande.",
+            delete_after=5,
+        )
 
 @bot.command()
 async def help(ctx):
@@ -199,6 +218,9 @@ async def help(ctx):
     embed.add_field(name="⠀", value="+ban", inline=False)
     embed.add_field(name="⠀", value="+clear", inline=False)
     embed.add_field(name="⠀", value="+warn", inline=False)
+    embed.add_field(name="⠀", value="+mute / +unmute", inline=False)
+    embed.add_field(name="⠀", value="+kick", inline=False)
+    embed.add_field(name="⠀", value="+say", inline=False)
     await ctx.send(embed=embed)
 
 
@@ -213,6 +235,53 @@ async def clear(ctx):
     await new_channel.edit(position=position, category=category)
     await channel.delete(reason=f"Salon vidé par {ctx.author}")
 
+@bot.command()
+@commands.has_permissions(moderate_members=True)
+@commands.bot_has_permissions(moderate_members=True)
+async def mute(ctx, user_id: int, minutes: int, *, raison="Aucune raison fournie"):
+    try:
+        # On récupère le membre sur le serveur
+        member = await ctx.guild.fetch_member(user_id)
+
+        # On applique le timeout (durée convertie en minutes)
+        duree = datetime.timedelta(minutes=minutes)
+        await member.timeout(duree, reason=raison)
+
+        await ctx.send(
+            f"🤫 **{member.name}** (`{member.id}`) a été rendu muet pour **{minutes}** minute(s).\nRaison : {raison}"
+        )
+
+    except discord.NotFound:
+        await ctx.send("❌ Cet utilisateur n'est pas sur le serveur.")
+    except discord.Forbidden:
+        await ctx.send(
+            "❌ Je ne peux pas rendre muet ce membre (rôle supérieur au mien)."
+        )
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : `{e}`")
+
+
+@bot.command()
+@commands.has_permissions(moderate_members=True)
+@commands.bot_has_permissions(moderate_members=True)
+async def unmute(ctx, user_id: int, *, raison="Action du staff"):
+    try:
+        member = await ctx.guild.fetch_member(user_id)
+
+        await member.timeout(None, reason=raison)
+
+        await ctx.send(
+            f"🔊 **{member.name}** (`{member.id}`) peut de nouveau parler !"
+        )
+
+    except discord.NotFound:
+        await ctx.send("❌ Cet utilisateur n'est pas sur le serveur.")
+    except discord.Forbidden:
+        await ctx.send(
+            "❌ Je n'ai pas la permission de retirer le timeout de ce membre."
+        )
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : `{e}`")
 
 @bot.command()
 @commands.has_permissions(ban_members=True)
@@ -233,6 +302,43 @@ async def ban(ctx, user_id: int, *, raison="Aucune raison fournie"):
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
 
+@bot.command()
+@commands.has_permissions(kick_members=True)
+@commands.bot_has_permissions(kick_members=True)
+async def kick(ctx, user_id: int, *, raison="Aucune raison fournie"):
+    try:
+        member = await ctx.guild.fetch_member(user_id)
+
+        await member.kick(reason=raison)
+
+        await ctx.send(
+            f"👢 **{member.name}** (`{member.id}`) a été exclu.\nRaison : {raison}"
+        )
+
+    except discord.NotFound:
+        await ctx.send(
+            "❌ Cet utilisateur n'est pas sur le serveur ou l'ID est incorrect."
+        )
+    except discord.Forbidden:
+        await ctx.send(
+            "❌ Je n'ai pas les permissions nécessaires pour exclure ce membre (mon rôle est peut-être trop bas)."
+        )
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : `{e}`")
+
+
+@kick.error
+async def kick_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send(
+            "❌ Tu n'as pas la permission d'exclure des membres.",
+            delete_after=5,
+        )
+    elif isinstance(error, commands.BotMissingPermissions):
+        await ctx.send(
+            "❌ Je n'ai pas la permission `Exclure des membres` dans mes réglages Discord.",
+            delete_after=5,
+        )
 
 @bot.command()
 @commands.has_permissions(moderate_members=True)
@@ -248,6 +354,38 @@ async def warn(ctx, user_id: int, *, raison="Aucune raison fournie"):
     except Exception as e:
         await ctx.send(f"❌ Erreur : {e}")
 
+@bot.command()
+async def userinfo(ctx, user_id: int = None):
+    try:
+        if user_id is None:
+            member = ctx.author
+        else:
+            member = await ctx.guild.fetch_member(user_id)
+
+        roles = [role.mention for role in member.roles if role != ctx.guild.default_role]
+        roles_texte = ", ".join(roles) if roles else "Aucun rôle"
+
+        embed = discord.Embed(
+            title=f"📋 Informations sur {member.name}",
+            color=member.color 
+        )
+        
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.add_field(name="👤 Pseudo", value=f"{member.name}#{member.discriminator}" if member.discriminator != "0" else member.name, inline=True)
+        embed.add_field(name="🆔 ID", value=f"`{member.id}`", inline=True)
+        creation_date = member.created_at.strftime("%d/%m/%Y à %H:%M")
+        join_date = member.joined_at.strftime("%d/%m/%Y à %H:%M")
+        
+        embed.add_field(name="📅 Compte créé le", value=creation_date, inline=False)
+        embed.add_field(name="📥 A rejoint le serveur le", value=join_date, inline=False)
+        embed.add_field(name="🎭 Rôles", value=roles_texte, inline=False)
+        
+        await ctx.send(embed=embed)
+
+    except discord.NotFound:
+        await ctx.send("❌ Utilisateur introuvable sur ce serveur. Vérifie l'ID !")
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : `{e}`")
 
 @bot.tree.command(name="youtube", description="Affiche ma chaine youtube")
 async def youtube(interaction: discord.Interaction):
