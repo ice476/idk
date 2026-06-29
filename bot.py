@@ -11,6 +11,9 @@ load_dotenv()
 
 print("Lancement du bot...")
 bot = commands.Bot(command_prefix=["!", "+"], intents=discord.Intents.all(), help_command=None)
+intents = discord.Intents.default()
+intents.message_content = True  
+intents.voice_states = True     
 
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
