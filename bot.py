@@ -78,34 +78,42 @@ async def message_recrutement_mensuel():
 
 @bot.event
 async def on_ready():
+    # 1. Messages de confirmation dans la console
     print(f"Connecté en tant que {bot.user.name}")
+    print(f"Bot connecté sous le nom de : {bot.user.name}")
 
-    # Pour un bot, on fusionne les infos dans le nom de l'activité
+    # 2. Configuration de l'activité (Statut du bot)
     nom_activite = "T-shirt | Dev by 9vibe (1 sur 5) | 0 restante"
-
     await bot.change_presence(activity=discord.Game(name=nom_activite))
 
-@bot.event
-async def on_ready():
-    print(f"Bot connecté sous le nom de : {bot.user.name}")
-    
-
+    # 3. Synchronisation des commandes Slash (Tree)
     try:
         synced = await bot.tree.sync()
         print(f"Commandes slash synchronisées : {len(synced)}")
     except Exception as e:
         print(f"Erreur sync : {e}")
 
+    # 4. Lancement de la tâche de recrutement (si elle existe)
+    try:
+        if not message_recrutement_mensuel.is_running():
+            message_recrutement_mensuel.start()
+    except NameError:
+        print(
+            "Note : La tâche 'message_recrutement_mensuel' n'est pas encore définie dans ce script."
+        )
 
-    if not message_recrutement_mensuel.is_running():
-        message_recrutement_mensuel.start()
+    # 5. Enregistrement des vues persistantes pour les boutons (Tickets)
+    # Note : Assure-toi que TicketView et TicketCloseView sont bien importés/définis plus haut
+    try:
+        bot.add_view(TicketView())
+        bot.add_view(TicketCloseView())
+    except NameError:
+        print(
+            "Note : TicketView ou TicketCloseView ne sont pas définis dans ce script."
+        )
 
-
-    bot.add_view(TicketView())
-    bot.add_view(TicketCloseView())
-    
-
-    ID_SALON_TICKET = 1518340932813062215 
+    # 6. Vérification et envoi automatique du panneau de Ticket
+    ID_SALON_TICKET = 1518340932813062215
     channel_ticket = bot.get_channel(ID_SALON_TICKET)
     if channel_ticket:
         messages = [msg async for msg in channel_ticket.history(limit=1)]
@@ -113,12 +121,12 @@ async def on_ready():
             embed = discord.Embed(
                 title="Besoin d'aide ?",
                 description="Cliquez sur le bouton ci-dessous pour ouvrir un ticket de support privé.",
-                color=discord.Color.blue()
+                color=discord.Color.blue(),
             )
             await channel_ticket.send(embed=embed, view=TicketView())
             print("Panneau de ticket automatique envoyé avec succès !")
 
-
+    # 7. Vérification et envoi automatique du message de Publicité
     ID_SALON_PUB = 1518709316818043001
     channel_pub = bot.get_channel(ID_SALON_PUB)
     if channel_pub:
@@ -143,16 +151,17 @@ Plus on est nombreux, plus l’ambiance sera folle @everyone"""
             print("Message de pub envoyé avec succès !")
 
 
-# --- AUTRES ÉVÉNEMENTS (Unifiés aussi pour le join) ---
+# --- AUTRES ÉVÉNEMENTS ---
+
 
 @bot.event
 async def on_member_join(member):
-
-    ID_DU_SALON = 1518341039499378739  
+    ID_DU_SALON = 1518341039499378739
     channel = bot.get_channel(ID_DU_SALON)
     if channel:
-        await channel.send(f"Bienvenue {member.mention} sur le serveur ! Viens discuter dans le chat !")
-        
+        await channel.send(
+            f"Bienvenue {member.mention} sur le serveur ! Viens discuter dans le chat !"
+        )
 
     ID_SALON_STAFF = 1521077673663660165
     channel_staff = bot.get_channel(ID_SALON_STAFF)
@@ -165,15 +174,15 @@ async def on_member_update(before, after):
     if before.premium_since_current_amount < after.premium_since_current_amount:
         ID_SALON_BOOST = 1519027720367898835
         channel = bot.get_channel(ID_SALON_BOOST)
-        
+
         if channel:
             nb_boosts_membre = after.premium_since_current_amount
             embed = discord.Embed(
                 title="Un énorme MERCI !",
                 description=f"{after.mention}\n\n"
-                            f"Tu as donné **{nb_boosts_membre}** boost(s) à ce serveur. "
-                            f"Merci pour ton soutien ! ",
-                color=discord.Color.fuchsia()
+                f"Tu as donné **{nb_boosts_membre}** boost(s) à ce serveur. "
+                f"Merci pour ton soutien ! ",
+                color=discord.Color.fuchsia(),
             )
             embed.set_thumbnail(url=after.display_avatar.url)
             await channel.send(embed=embed)
@@ -181,14 +190,18 @@ async def on_member_update(before, after):
 
 # --- COMMANDES PREFIX & SLASH ---
 
+
 @bot.command()
 async def help(ctx):
-    embed = discord.Embed(title="Toutes les commandes", description="⠀", color=discord.Color.blue())
+    embed = discord.Embed(
+        title="Toutes les commandes", description="⠀", color=discord.Color.blue()
+    )
     embed.add_field(name="⠀", value="/youtube", inline=False)
     embed.add_field(name="⠀", value="+ban", inline=False)
     embed.add_field(name="⠀", value="+clear", inline=False)
     embed.add_field(name="⠀", value="+warn", inline=False)
     await ctx.send(embed=embed)
+
 
 @bot.command()
 @commands.has_permissions(manage_channels=True)
@@ -198,10 +211,9 @@ async def clear(ctx):
     position = channel.position
 
     new_channel = await channel.clone(reason=f"Salon vidé par {ctx.author}")
-
     await new_channel.edit(position=position, category=category)
-
     await channel.delete(reason=f"Salon vidé par {ctx.author}")
+
 
 @bot.command()
 @commands.has_permissions(ban_members=True)
@@ -210,37 +222,39 @@ async def ban(ctx, user_id: int, *, raison="Aucune raison fournie"):
     try:
         user = await bot.fetch_user(user_id)
         await ctx.guild.ban(user, reason=raison)
-
-        await ctx.send(f"✅ **{user}** (`{user.id}`) a été banni.\nRaison : {raison}")
-
+        await ctx.send(
+            f"✅ **{user}** (`{user.id}`) a été banni.\nRaison : {raison}"
+        )
     except discord.NotFound:
         await ctx.send("❌ Utilisateur introuvable.")
     except discord.Forbidden:
-        await ctx.send("❌ Je n'ai pas la permission de bannir cet utilisateur.")
+        await ctx.send(
+            "❌ Je n'ai pas la permission de bannir cet utilisateur."
+        )
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
+
 
 @bot.command()
 @commands.has_permissions(moderate_members=True)
 async def warn(ctx, user_id: int, *, raison="Aucune raison fournie"):
     try:
         user = await bot.fetch_user(user_id)
-
         await ctx.send(
             f"⚠️ **{user}** (`{user.id}`) a reçu un avertissement.\n"
             f"Raison : {raison}"
         )
-
     except discord.NotFound:
         await ctx.send("❌ Utilisateur introuvable.")
-
     except Exception as e:
         await ctx.send(f"❌ Erreur : {e}")
 
 
 @bot.tree.command(name="youtube", description="Affiche ma chaine youtube")
 async def youtube(interaction: discord.Interaction):
-    await interaction.response.send_message("Voici le lien de ma chaine : https://www.youtube.com/@Nawkini")
+    await interaction.response.send_message(
+        "Voici le lien de ma chaine : https://www.youtube.com/@Nawkini"
+    )
 
 
 print("TOKEN =", os.getenv("DISCORD_TOKEN"))
