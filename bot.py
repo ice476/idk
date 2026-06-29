@@ -78,33 +78,16 @@ async def message_recrutement_mensuel():
 
 @bot.event
 async def on_ready():
-    print(f"Bot connecté sous le nom de : {bot.user.name}")
-
+    print(f"Connecté en tant que {bot.user.name}")
+    
     activity = discord.Activity(
         type=discord.ActivityType.playing,
-        name="T-shirt",  
-        
-        details="Good Vibes", 
-        
-        state="Dev bi 9vibe", 
-        
-        timestamps={
-            "end": int(time.time()) + 3600  
-        },
-        
-        party={
-            "size": [4, 5] 
-        },
-        
-        assets={
-            "large_image": "image_principale",  
-            "large_text": "T-shirt Communauté",  
-            "small_image": "petit_logo",        
-            "small_text": "Vibe"                
-        }
+        name="T-shirt",                         
+        details="Dev by 9vibe (1 sur 5)",       
+        state="0: restantes0 restante"          
     )
-
-    await bot.change_presence(status=discord.Status.online, activity=activity)
+    
+    await bot.change_presence(activity=activity)
 
 @bot.event
 async def on_ready():
