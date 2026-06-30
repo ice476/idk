@@ -291,7 +291,7 @@ async def help(ctx):
         title="Toutes les commandes", description="⠀", color=discord.Color.blue()
     )
     embed.add_field(name="Modération", value="`+ban`, `+kick`, `+mute`, `+unmute`, `+warn`, `+clear`, `+say`", inline=False)
-    embed.add_field(name="Musique", value="`!play`, `!skip`, `!stop`, `!queue`", inline=False)
+    embed.add_field(name="Musique", value="`+play`, `+skip`, `+stop`, `+queue`", inline=False)
     embed.add_field(name="Slash Commands", value="`/youtube`", inline=False)
     await ctx.send(embed=embed)
 
