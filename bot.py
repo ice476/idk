@@ -28,11 +28,11 @@ FFMPEG_OPTIONS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
     'options': '-vn',
 }
-
 cookies_content = os.environ.get('YOUTUBE_COOKIES')
 if cookies_content:
     with open('cookies.txt', 'w') as f:
         f.write(cookies_content)
+    YTDL_OPTIONS['cookiefile'] = 'cookies.txt'   
 
 # --- VUES POUR LES TICKETS ---
 
