@@ -32,7 +32,10 @@ cookies_content = os.environ.get('YOUTUBE_COOKIES')
 if cookies_content:
     with open('cookies.txt', 'w') as f:
         f.write(cookies_content)
-    YTDL_OPTIONS['cookiefile'] = 'cookies.txt'   
+    YTDL_OPTIONS['cookiefile'] = 'cookies.txt'
+    print(f"Cookies écrits : {len(cookies_content)} caractères, fichier présent : {os.path.exists('cookies.txt')}")
+else:
+    print("⚠️ Aucune variable YOUTUBE_COOKIES trouvée !") 
 
 # --- VUES POUR LES TICKETS ---
 
