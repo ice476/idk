@@ -5,6 +5,7 @@ import time
 import yt_dlp
 import asyncio
 import datetime
+import wavelink
 from dotenv import load_dotenv
 from discord.ext import tasks, commands
 
@@ -20,15 +21,23 @@ intents.members = True
 
 bot = commands.Bot(command_prefix=["!", "+"], intents=intents, help_command=None)
 
+async def setup_hook(self):
+        
+        node = wavelink.Node(
+            uri="lavalink-production-f694.up.railway.app", 
+            password="Obezman123$" 
+        )
+        
+        await wavelink.Pool.connect(nodes=[node], client=self)
+
+bot = Bot()
+
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
     'noplaylist': True,
     'quiet': True,
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['ios']
-        }
-    }
+    'username': 'oauth2',
+    'password': '',
 }
 FFMPEG_OPTIONS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -119,6 +128,10 @@ async def message_recrutement_mensuel():
 
 
 # --- UNIFICATION DU ON_READY ---
+
+@bot.event
+async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
+    print(f"Le nœud Lavalink {payload.node.identifier} est connecté avec succès !")
 
 @bot.event
 async def on_ready():
