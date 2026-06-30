@@ -8,19 +8,19 @@ import datetime
 import wavelink
 from dotenv import load_dotenv
 from discord.ext import tasks, commands
- 
+
 load_dotenv()
- 
+
 print("Lancement du bot...")
- 
- 
+
+
 intents = discord.Intents.default()
 intents.message_content = True  
 intents.voice_states = True    
 intents.members = True  
- 
+
 bot = commands.Bot(command_prefix=["!", "+"], intents=intents, help_command=None)
- 
+
 async def custom_setup_hook():
     node = wavelink.Node(
         uri="https://lavalink-production-f694.up.railway.app:443", 
@@ -28,9 +28,9 @@ async def custom_setup_hook():
     )
     await wavelink.Pool.connect(nodes=[node], client=bot)
     print("Nœud Lavalink configuré dans le pool.")
- 
+
 bot.setup_hook = custom_setup_hook
- 
+
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
     'noplaylist': True,
@@ -50,61 +50,61 @@ if cookies_content:
     print(f"Cookies écrits : {len(cookies_content)} caractères, fichier présent : {os.path.exists('cookies.txt')}", flush=True)
 else:
     print("⚠️ Aucune variable YOUTUBE_COOKIES trouvée !", flush=True) 
- 
+
 def load_warns():
     try:
         with open('warns.json', 'r') as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
- 
+
 def save_warns(data):
     with open('warns.json', 'w') as f:
         json.dump(data, f, indent=4)
- 
+
 # --- VUES POUR LES TICKETS ---
- 
+
 class TicketCloseView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
- 
+
     @discord.ui.button(label="Fermer le ticket", style=discord.ButtonStyle.red, custom_id="close_ticket_btn")
     async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Fermeture du ticket...", ephemeral=True)
         await interaction.channel.delete()
- 
+
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
- 
+
     @discord.ui.button(label="Créer un ticket", style=discord.ButtonStyle.green, custom_id="create_ticket_btn")
     async def ticket_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         member = interaction.user
- 
+
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             member: discord.PermissionOverwrite(read_messages=True, send_messages=True),
             guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
         }
- 
+
         channel = await guild.create_text_channel(
             name=f"ticket-{member.name}", 
             overwrites=overwrites
         )
- 
+
         await interaction.response.send_message(f"Votre ticket a été créé ici : {channel.mention}", ephemeral=True)
- 
+
         embed = discord.Embed(
             title="Ticket Ouvert",
             description=f"Bonjour {member.mention},\nUn membre de l'équipe va s'occuper de vous. Cliquez sur le bouton ci-dessous pour fermer ce ticket.",
             color=discord.Color.green()
         )
         await channel.send(embed=embed, view=TicketCloseView())
- 
- 
+
+
 # --- EFFETS ET LOOP ---
- 
+
 @tasks.loop(hours=720)
 async def message_recrutement_mensuel():
     ID_SALON_STAFF = 1521077673663660165
@@ -122,36 +122,36 @@ async def message_recrutement_mensuel():
         embed.add_field(name="Candidature", value="Si vous souhaitez devenir Staff, contactez une personne haut gradée.", inline=False)
         embed.set_footer(text="Cordialement")
         embed.set_image(url="https://i.pinimg.com/webp85/1200x/a8/84/a8/a884a8c972360381071e972f1a6b659e.webp")
- 
+
         await channel.send(content="@everyone", embed=embed)
- 
- 
+
+
 # --- UNIFICATION DU ON_READY ---
- 
+
 @bot.event
 async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
     print(f"Le nœud Lavalink {payload.node.identifier} est connecté avec succès !")
- 
+
 @bot.event
 async def on_ready():
     print(f"Connecté en tant que {bot.user.name}")
     await bot.add_cog(MusicBot(bot))
- 
+
     nom_activite = "T-shirt | Dev by 9vibe (1 sur 5) | 0 restante"
     await bot.change_presence(activity=discord.Game(name=nom_activite))
- 
+
     try:
         synced = await bot.tree.sync()
         print(f"Commandes slash synchronisées : {len(synced)}")
     except Exception as e:
         print(f"Erreur sync : {e}")
- 
+
     if not message_recrutement_mensuel.is_running():
         message_recrutement_mensuel.start()
- 
+
     bot.add_view(TicketView())
     bot.add_view(TicketCloseView())
- 
+
     ID_SALON_TICKET = 1518340932813062215
     channel_ticket = bot.get_channel(ID_SALON_TICKET)
     if channel_ticket:
@@ -164,7 +164,7 @@ async def on_ready():
             )
             await channel_ticket.send(embed=embed, view=TicketView())
             print("Panneau de ticket automatique envoyé avec succès !")
- 
+
     ID_SALON_PUB = 1518709316818043001
     channel_pub = bot.get_channel(ID_SALON_PUB)
     if channel_pub:
@@ -172,25 +172,25 @@ async def on_ready():
         if not messages_pub:
             texte_pub = """Tu cherches un endroit cool pour discuter, rencontrer du monde et jouer ensemble ?
 Rejoins T shirt, une communauté conviviale où bonne humeur et gaming sont au rendez-vous !
- 
+
 Discussions libres et respectueuses
 Sessions de jeux entre membres
 Délires, memes et ambiance détendue
 Une communauté active et accueillante
- 
+
 Que tu sois casual ou tryhard, tu as ta place ici ! Rejoins-nous et fais partie de l’aventure T shirt dès maintenant Au 5 invites au rôles !! 
- 
+
 https://discord.gg/PM6Zsca8xe
- 
+
 Si vous aimez le serveur T shirt , n’hésitez pas à en parler autour de vous ou à inviter vos amis
 Plus on est nombreux, plus l’ambiance sera folle @everyone"""
- 
+
             await channel_pub.send(content=texte_pub)
             print("Message de pub envoyé avec succès !")
- 
- 
+
+
 # --- AUTRES ÉVÉNEMENTS ---
- 
+
 @bot.event
 async def on_member_join(member):
     ID_DU_SALON = 1518341039499378739
@@ -199,19 +199,19 @@ async def on_member_join(member):
         await channel.send(
             f"Bienvenue {member.mention} sur le serveur ! Viens discuter dans le chat !"
         )
- 
+
     ID_SALON_STAFF = 1521077673663660165
     channel_staff = bot.get_channel(ID_SALON_STAFF)
     if channel_staff:
         await channel_staff.send(f"{member.mention}", delete_after=1)
- 
- 
+
+
 @bot.event
 async def on_member_update(before, after):
     if before.guild.premium_subscription_count < after.guild.premium_subscription_count:
         ID_SALON_BOOST = 1519027720367898835
         channel = bot.get_channel(ID_SALON_BOOST)
- 
+
         if channel:
             embed = discord.Embed(
                 title="Un énorme MERCI !",
@@ -220,33 +220,33 @@ async def on_member_update(before, after):
             )
             embed.set_thumbnail(url=after.display_avatar.url)
             await channel.send(embed=embed)
- 
+
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
     await bot.process_commands(message)
- 
- 
- 
+
+
+
 class MusicBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
- 
+
     @commands.command(name='play')
     async def play(self, ctx, *, search: str):
         if not ctx.author.voice:
             return await ctx.send("Tu dois être dans un salon vocal pour faire ça !")
- 
+
         voice_channel = ctx.author.voice.channel
- 
+
         if not ctx.voice_client:
             vc: wavelink.Player = await voice_channel.connect(cls=wavelink.Player)
         else:
             vc: wavelink.Player = ctx.voice_client
- 
+
         await ctx.send(f"🔍 Recherche de `{search}`...")
- 
+
         try:
             tracks = await wavelink.Playable.search(search)
             if not tracks:
@@ -257,13 +257,19 @@ class MusicBot(commands.Cog):
             import traceback
             traceback.print_exc()
             return await ctx.send("Impossible de trouver ou de lire cette musique.")
- 
+
         await vc.queue.put_wait(track)
         await ctx.send(f"🎵 Ajouté à la file : **{track.title}**")
- 
+
         if not vc.playing:
-            await vc.play(vc.queue.get())
- 
+            try:
+                await vc.play(vc.queue.get())
+            except Exception as e:
+                print(f"Erreur lors du play(): {e}")
+                import traceback
+                traceback.print_exc()
+                await ctx.send(f"❌ Erreur lors du lancement de la lecture : `{e}`")
+
     @commands.command(name='pause')
     async def pause(self, ctx):
         vc: wavelink.Player = ctx.voice_client
@@ -272,7 +278,7 @@ class MusicBot(commands.Cog):
             await ctx.send("⏸️ Musique mise en pause.")
         else:
             await ctx.send("Aucune musique n'est en cours de lecture.")
- 
+
     @commands.command(name='resume')
     async def resume(self, ctx):
         vc: wavelink.Player = ctx.voice_client
@@ -281,7 +287,7 @@ class MusicBot(commands.Cog):
             await ctx.send("▶️ Musique reprise.")
         else:
             await ctx.send("La musique n'est pas en pause.")
- 
+
     @commands.command(name='volume')
     async def volume(self, ctx, volume: int):
         vc: wavelink.Player = ctx.voice_client
@@ -291,7 +297,7 @@ class MusicBot(commands.Cog):
             return await ctx.send("❌ Le volume doit être entre 0 et 100.")
         await vc.set_volume(volume)
         await ctx.send(f"🔊 Volume réglé à **{volume}%**.")
- 
+
     @commands.command(name='skip')
     async def skip(self, ctx):
         vc: wavelink.Player = ctx.voice_client
@@ -300,7 +306,7 @@ class MusicBot(commands.Cog):
             await ctx.send("⏭️ Musique passée !")
         else:
             await ctx.send("Aucune musique n'est en cours de lecture.")
- 
+
     @commands.command(name='stop')
     async def stop(self, ctx):
         vc: wavelink.Player = ctx.voice_client
@@ -310,7 +316,7 @@ class MusicBot(commands.Cog):
             await ctx.send("🛑 Musique arrêtée et déconnexion.")
         else:
             await ctx.send("Je ne suis pas connecté à un salon vocal.")
- 
+
     @commands.command(name='queue')
     async def queue_list(self, ctx):
         vc: wavelink.Player = ctx.voice_client
@@ -322,7 +328,7 @@ class MusicBot(commands.Cog):
             description += f"{i}. **{track.title}**\n"
         embed.description = description
         await ctx.send(embed=embed)
- 
+
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         player = payload.player
@@ -331,7 +337,18 @@ class MusicBot(commands.Cog):
         if not player.queue.is_empty:
             next_track = player.queue.get()
             await player.play(next_track)
- 
+
+    @commands.Cog.listener()
+    async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload):
+        player = payload.player
+        if not player or not player.guild:
+            return
+        channel = player.guild.system_channel
+        message = getattr(payload.exception, "message", str(payload.exception))
+        print(f"Erreur Lavalink (track exception) : {message}")
+        if channel:
+            await channel.send(f"❌ Impossible de lire ce morceau (erreur Lavalink) : `{message}`")
+
 @bot.command()
 @commands.has_permissions(manage_messages=True)
 async def say(ctx, *, message: str):
@@ -340,8 +357,8 @@ async def say(ctx, *, message: str):
     except discord.Forbidden:
         pass
     await ctx.send(message)
- 
- 
+
+
 @say.error
 async def say_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
@@ -349,7 +366,7 @@ async def say_error(ctx, error):
             "❌ Tu n'as pas la permission d'utiliser cette commande.",
             delete_after=5,
         )
- 
+
 @bot.command()
 async def help(ctx):
     embed = discord.Embed(
@@ -359,7 +376,7 @@ async def help(ctx):
     embed.add_field(name="Musique", value="`+play`,`+pause`,`+resume`, `+skip`, `+stop`, `+queue`", inline=False)
     embed.add_field(name="Slash Commands", value="`/youtube`", inline=False)
     await ctx.send(embed=embed)
- 
+
 @bot.command()
 @commands.has_permissions(manage_channels=True)
 @commands.bot_has_permissions(manage_channels=True)
@@ -371,7 +388,7 @@ async def lock(ctx):
         await ctx.send("❌ Je n'ai pas la permission de verrouiller ce salon.")
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
- 
+
 @bot.command()
 @commands.has_permissions(manage_channels=True)
 @commands.bot_has_permissions(manage_channels=True)
@@ -383,18 +400,18 @@ async def unlock(ctx):
         await ctx.send("❌ Je n'ai pas la permission de déverrouiller ce salon.")
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
- 
+
 @bot.command()
 @commands.has_permissions(manage_channels=True)
 async def clear(ctx):
     channel = ctx.channel
     category = channel.category
     position = channel.position
- 
+
     new_channel = await channel.clone(reason=f"Salon vidé par {ctx.author}")
     await new_channel.edit(position=position, category=category)
     await channel.delete(reason=f"Salon vidé par {ctx.author}")
- 
+
 @bot.command()
 @commands.has_permissions(moderate_members=True)
 @commands.bot_has_permissions(moderate_members=True)
@@ -410,8 +427,8 @@ async def mute(ctx, user_id: int, minutes: int, *, raison="Aucune raison fournie
         await ctx.send("❌ Je ne peux pas rendre muet ce membre (rôle supérieur au mien).")
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
- 
- 
+
+
 @bot.command()
 @commands.has_permissions(moderate_members=True)
 @commands.bot_has_permissions(moderate_members=True)
@@ -426,7 +443,7 @@ async def unmute(ctx, user_id: int, *, raison="Action du staff"):
         await ctx.send("❌ Je n'ai pas la permission de retirer le timeout de ce membre.")
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
- 
+
 @bot.command()
 @commands.has_permissions(ban_members=True)
 @commands.bot_has_permissions(ban_members=True)
@@ -441,7 +458,7 @@ async def ban(ctx, user_id: int, *, raison="Aucune raison fournie"):
         await ctx.send("❌ Je n'ai pas la permission de bannir cet utilisateur.")
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
- 
+
 @bot.command()
 @commands.has_permissions(ban_members=True)
 @commands.bot_has_permissions(ban_members=True)
@@ -456,7 +473,7 @@ async def unban(ctx, user_id: int, *, raison="Aucune raison fournie"):
         await ctx.send("❌ Je n'ai pas la permission de débannir cet utilisateur.")
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
- 
+
 @bot.command()
 @commands.has_permissions(kick_members=True)
 @commands.bot_has_permissions(kick_members=True)
@@ -471,15 +488,15 @@ async def kick(ctx, user_id: int, *, raison="Aucune raison fournie"):
         await ctx.send("❌ Je n'ai pas les permissions nécessaires pour exclure ce membre.")
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
- 
- 
+
+
 @kick.error
 async def kick_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         await ctx.send("❌ Tu n'as pas la permission d'exclure des membres.", delete_after=5)
     elif isinstance(error, commands.BotMissingPermissions):
         await ctx.send("❌ Je n'ai pas la permission `Exclure des membres`.", delete_after=5)
- 
+
 @bot.command()
 @commands.has_permissions(moderate_members=True)
 async def warn(ctx, user_id: int, *, raison="Aucune raison fournie"):
@@ -502,7 +519,7 @@ async def warn(ctx, user_id: int, *, raison="Aucune raison fournie"):
         await ctx.send("❌ Utilisateur introuvable.")
     except Exception as e:
         await ctx.send(f"❌ Erreur : {e}")
- 
+
 @bot.command()
 @commands.has_permissions(moderate_members=True)
 async def history(ctx, user_id: int):
@@ -510,10 +527,10 @@ async def history(ctx, user_id: int):
         user = await bot.fetch_user(user_id)
         warns = load_warns()
         user_warns = warns.get(str(user_id), [])
- 
+
         if not user_warns:
             return await ctx.send(f"✅ **{user}** n'a aucun avertissement.")
- 
+
         embed = discord.Embed(
             title=f"⚠️ Historique de {user}",
             color=discord.Color.orange()
@@ -537,10 +554,10 @@ async def userinfo(ctx, user_id: int = None):
             member = ctx.author
         else:
             member = await ctx.guild.fetch_member(user_id)
- 
+
         roles = [role.mention for role in member.roles if role != ctx.guild.default_role]
         roles_texte = ", ".join(roles) if roles else "Aucun rôle"
- 
+
         embed = discord.Embed(title=f"📋 Informations sur {member.name}", color=member.color)
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.add_field(name="👤 Pseudo", value=member.name, inline=True)
@@ -554,18 +571,18 @@ async def userinfo(ctx, user_id: int = None):
         embed.add_field(name="🎭 Rôles", value=roles_texte, inline=False)
         
         await ctx.send(embed=embed)
- 
+
     except discord.NotFound:
         await ctx.send("❌ Utilisateur introuvable sur ce serveur. Vérifie l'ID !")
     except Exception as e:
         await ctx.send(f"❌ Erreur : `{e}`")
- 
+
 @bot.tree.command(name="youtube", description="Affiche ma chaine youtube")
 async def youtube(interaction: discord.Interaction):
     await interaction.response.send_message(
         "Voici le lien de ma chaine : https://www.youtube.com/@Nawkini"
     )
     
- 
- 
+
+
 bot.run(os.getenv("DISCORD_TOKEN"))
