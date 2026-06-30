@@ -29,8 +29,6 @@ async def custom_setup_hook():
     await wavelink.Pool.connect(nodes=[node], client=bot)
     print("Nœud Lavalink configuré dans le pool.")
  
-bot = Bot()
- 
 bot.setup_hook = custom_setup_hook
  
 YTDL_OPTIONS = {
