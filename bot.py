@@ -1,5 +1,6 @@
 import discord
 import os
+import json
 import time
 import yt_dlp
 import asyncio
@@ -36,6 +37,17 @@ if cookies_content:
     print(f"Cookies écrits : {len(cookies_content)} caractères, fichier présent : {os.path.exists('cookies.txt')}", flush=True)
 else:
     print("⚠️ Aucune variable YOUTUBE_COOKIES trouvée !", flush=True) 
+
+def load_warns():
+    try:
+        with open('warns.json', 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_warns(data):
+    with open('warns.json', 'w') as f:
+        json.dump(data, f, indent=4)
 
 # --- VUES POUR LES TICKETS ---
 
@@ -203,7 +215,8 @@ async def on_message(message):
 class MusicBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.queue = []  
+        self.queue = []
+        self.current_song = None
 
     @commands.command(name='play')
     async def play(self, ctx, *, search: str):
@@ -214,7 +227,7 @@ class MusicBot(commands.Cog):
 
         if not ctx.voice_client:
             await voice_channel.connect()
-        
+
         await ctx.send(f"🔍 Recherche de `{search}`...")
 
         with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ytdl:
@@ -237,21 +250,53 @@ class MusicBot(commands.Cog):
     def play_next(self, ctx):
         if len(self.queue) > 0:
             song = self.queue.pop(0)
+            self.current_song = song
             url = song['url']
             title = song['title']
 
-            source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS)
+            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS))
+            source.volume = 0.5
             ctx.voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(self.check_queue(ctx), self.bot.loop))
-            
+
             self.bot.loop.create_task(ctx.send(f"🎶 En train de jouer : **{title}**"))
+        else:
+            self.current_song = None
 
     async def check_queue(self, ctx):
         self.play_next(ctx)
 
+    @commands.command(name='pause')
+    async def pause(self, ctx):
+        if ctx.voice_client and ctx.voice_client.is_playing():
+            ctx.voice_client.pause()
+            await ctx.send("⏸️ Musique mise en pause.")
+        else:
+            await ctx.send("Aucune musique n'est en cours de lecture.")
+
+    @commands.command(name='resume')
+    async def resume(self, ctx):
+        if ctx.voice_client and ctx.voice_client.is_paused():
+            ctx.voice_client.resume()
+            await ctx.send("▶️ Musique reprise.")
+        else:
+            await ctx.send("La musique n'est pas en pause.")
+
+    @commands.command(name='volume')
+    async def volume(self, ctx, volume: int):
+        if not ctx.voice_client:
+            return await ctx.send("Je ne suis pas connecté à un salon vocal.")
+        if not 0 <= volume <= 100:
+            return await ctx.send("❌ Le volume doit être entre 0 et 100.")
+        if ctx.voice_client.source:
+            ctx.voice_client.source.volume = volume / 100
+            await ctx.send(f"🔊 Volume réglé à **{volume}%**.")
+        else:
+            await ctx.send("Aucune musique n'est en cours de lecture.")
+
     @commands.command(name='skip')
     async def skip(self, ctx):
         if ctx.voice_client and ctx.voice_client.is_playing():
-            ctx.voice_client.stop()  
+            ctx.voice_client.stop()
             await ctx.send("⏭️ Musique passée !")
         else:
             await ctx.send("Aucune musique n'est en cours de lecture.")
@@ -259,6 +304,7 @@ class MusicBot(commands.Cog):
     @commands.command(name='stop')
     async def stop(self, ctx):
         self.queue.clear()
+        self.current_song = None
         if ctx.voice_client:
             await ctx.voice_client.disconnect()
             await ctx.send("🛑 Musique arrêtée et déconnexion.")
@@ -269,24 +315,12 @@ class MusicBot(commands.Cog):
     async def queue_list(self, ctx):
         if len(self.queue) == 0:
             return await ctx.send("La file d'attente est vide.")
-
         embed = discord.Embed(title="📋 File d'attente", color=discord.Color.blue())
         description = ""
         for i, song in enumerate(self.queue, start=1):
             description += f"{i}. **{song['title']}**\n"
-        
         embed.description = description
         await ctx.send(embed=embed)
-
-@bot.command()
-@commands.has_permissions(manage_messages=True)
-async def say(ctx, *, message: str):
-    try:
-        await ctx.message.delete()
-    except discord.Forbidden:
-        pass
-    await ctx.send(message)
-
 
 @say.error
 async def say_error(ctx, error):
@@ -301,11 +335,34 @@ async def help(ctx):
     embed = discord.Embed(
         title="Toutes les commandes", description="⠀", color=discord.Color.blue()
     )
-    embed.add_field(name="Modération", value="`+ban`, `+kick`, `+mute`, `+unmute`, `+warn`, `+clear`, `+say`", inline=False)
-    embed.add_field(name="Musique", value="`+play`, `+skip`, `+stop`, `+queue`", inline=False)
+    embed.add_field(name="Modération", value="`+userinfo`,`+ban`,`+unban`,`+lock`,`+unlock`, `+kick`,`+history`, `+mute`, `+unmute`, `+warn`, `+clear`, `+say`", inline=False)
+    embed.add_field(name="Musique", value="`+play`,`+volume`,`+pause`,`+resume`, `+skip`, `+stop`, `+queue`", inline=False)
     embed.add_field(name="Slash Commands", value="`/youtube`", inline=False)
     await ctx.send(embed=embed)
 
+@bot.command()
+@commands.has_permissions(manage_channels=True)
+@commands.bot_has_permissions(manage_channels=True)
+async def lock(ctx):
+    try:
+        await ctx.channel.set_permissions(ctx.guild.default_role, send_messages=False)
+        await ctx.send("🔒 Salon verrouillé.")
+    except discord.Forbidden:
+        await ctx.send("❌ Je n'ai pas la permission de verrouiller ce salon.")
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : `{e}`")
+
+@bot.command()
+@commands.has_permissions(manage_channels=True)
+@commands.bot_has_permissions(manage_channels=True)
+async def unlock(ctx):
+    try:
+        await ctx.channel.set_permissions(ctx.guild.default_role, send_messages=True)
+        await ctx.send("🔓 Salon déverrouillé.")
+    except discord.Forbidden:
+        await ctx.send("❌ Je n'ai pas la permission de déverrouiller ce salon.")
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : `{e}`")
 
 @bot.command()
 @commands.has_permissions(manage_channels=True)
@@ -366,6 +423,21 @@ async def ban(ctx, user_id: int, *, raison="Aucune raison fournie"):
         await ctx.send(f"❌ Erreur : `{e}`")
 
 @bot.command()
+@commands.has_permissions(ban_members=True)
+@commands.bot_has_permissions(ban_members=True)
+async def unban(ctx, user_id: int, *, raison="Aucune raison fournie"):
+    try:
+        user = await bot.fetch_user(user_id)
+        await ctx.guild.unban(user, reason=raison)
+        await ctx.send(f"✅ **{user}** (`{user.id}`) a été débanni.\nRaison : {raison}")
+    except discord.NotFound:
+        await ctx.send("❌ Utilisateur introuvable ou pas banni.")
+    except discord.Forbidden:
+        await ctx.send("❌ Je n'ai pas la permission de débannir cet utilisateur.")
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : `{e}`")
+
+@bot.command()
 @commands.has_permissions(kick_members=True)
 @commands.bot_has_permissions(kick_members=True)
 async def kick(ctx, user_id: int, *, raison="Aucune raison fournie"):
@@ -393,12 +465,51 @@ async def kick_error(ctx, error):
 async def warn(ctx, user_id: int, *, raison="Aucune raison fournie"):
     try:
         user = await bot.fetch_user(user_id)
+        warns = load_warns()
+        
+        if str(user_id) not in warns:
+            warns[str(user_id)] = []
+        
+        warns[str(user_id)].append({
+            'raison': raison,
+            'date': datetime.datetime.now().strftime("%d/%m/%Y à %H:%M"),
+            'moderateur': str(ctx.author)
+        })
+        save_warns(warns)
+        
         await ctx.send(f"⚠️ **{user}** (`{user.id}`) a reçu un avertissement.\nRaison : {raison}")
     except discord.NotFound:
         await ctx.send("❌ Utilisateur introuvable.")
     except Exception as e:
         await ctx.send(f"❌ Erreur : {e}")
 
+@bot.command()
+@commands.has_permissions(moderate_members=True)
+async def history(ctx, user_id: int):
+    try:
+        user = await bot.fetch_user(user_id)
+        warns = load_warns()
+        user_warns = warns.get(str(user_id), [])
+
+        if not user_warns:
+            return await ctx.send(f"✅ **{user}** n'a aucun avertissement.")
+
+        embed = discord.Embed(
+            title=f"⚠️ Historique de {user}",
+            color=discord.Color.orange()
+        )
+        for i, warn in enumerate(user_warns, start=1):
+            embed.add_field(
+                name=f"Warn #{i} — {warn['date']}",
+                value=f"Raison : {warn['raison']}\nPar : {warn['moderateur']}",
+                inline=False
+            )
+        await ctx.send(embed=embed)
+    except discord.NotFound:
+        await ctx.send("❌ Utilisateur introuvable.")
+    except Exception as e:
+        await ctx.send(f"❌ Erreur : `{e}`")
+        
 @bot.command()
 async def userinfo(ctx, user_id: int = None):
     try:
@@ -436,5 +547,5 @@ async def youtube(interaction: discord.Interaction):
     )
     
 
-    
+
 bot.run(os.getenv("DISCORD_TOKEN"))
