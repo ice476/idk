@@ -29,6 +29,11 @@ FFMPEG_OPTIONS = {
     'options': '-vn',
 }
 
+cookies_content = os.environ.get('YOUTUBE_COOKIES')
+if cookies_content:
+    with open('cookies.txt', 'w') as f:
+        f.write(cookies_content)
+
 # --- VUES POUR LES TICKETS ---
 
 class TicketCloseView(discord.ui.View):
