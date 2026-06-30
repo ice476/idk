@@ -24,6 +24,11 @@ YTDL_OPTIONS = {
     'format': 'bestaudio/best',
     'noplaylist': True,
     'quiet': True,
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['ios']
+        }
+    }
 }
 FFMPEG_OPTIONS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -346,7 +351,7 @@ async def help(ctx):
         title="Toutes les commandes", description="⠀", color=discord.Color.blue()
     )
     embed.add_field(name="Modération", value="`+userinfo`,`+ban`,`+unban`,`+lock`,`+unlock`, `+kick`,`+history`, `+mute`, `+unmute`, `+warn`, `+clear`, `+say`", inline=False)
-    embed.add_field(name="Musique", value="`+play`,`+play`,`+pause`,`+resume`, `+skip`, `+stop`, `+queue`", inline=False)
+    embed.add_field(name="Musique", value="`+play`,`+pause`,`+resume`, `+skip`, `+stop`, `+queue`", inline=False)
     embed.add_field(name="Slash Commands", value="`/youtube`", inline=False)
     await ctx.send(embed=embed)
 
