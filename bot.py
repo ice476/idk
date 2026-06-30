@@ -322,6 +322,16 @@ class MusicBot(commands.Cog):
         embed.description = description
         await ctx.send(embed=embed)
 
+@bot.command()
+@commands.has_permissions(manage_messages=True)
+async def say(ctx, *, message: str):
+    try:
+        await ctx.message.delete()
+    except discord.Forbidden:
+        pass
+    await ctx.send(message)
+
+
 @say.error
 async def say_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
@@ -336,7 +346,7 @@ async def help(ctx):
         title="Toutes les commandes", description="⠀", color=discord.Color.blue()
     )
     embed.add_field(name="Modération", value="`+userinfo`,`+ban`,`+unban`,`+lock`,`+unlock`, `+kick`,`+history`, `+mute`, `+unmute`, `+warn`, `+clear`, `+say`", inline=False)
-    embed.add_field(name="Musique", value="`+play`,`+volume`,`+pause`,`+resume`, `+skip`, `+stop`, `+queue`", inline=False)
+    embed.add_field(name="Musique", value="`+play`,`+play`,`+pause`,`+resume`, `+skip`, `+stop`, `+queue`", inline=False)
     embed.add_field(name="Slash Commands", value="`/youtube`", inline=False)
     await ctx.send(embed=embed)
 
