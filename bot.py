@@ -435,4 +435,6 @@ async def youtube(interaction: discord.Interaction):
         "Voici le lien de ma chaine : https://www.youtube.com/@Nawkini"
     )
     
-    bot.run(os.getenv("DISCORD_TOKEN"))
+
+    
+bot.run(os.getenv("DISCORD_TOKEN"))
