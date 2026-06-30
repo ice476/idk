@@ -215,6 +215,9 @@ class MusicBot(commands.Cog):
                 url = info['url']
                 title = info['title']
             except Exception as e:
+                print(f"Erreur yt-dlp: {e}")
+                import traceback
+                traceback.print_exc()
                 return await ctx.send("Impossible de trouver ou de lire cette musique.")
 
         self.queue.append({'url': url, 'title': title})
