@@ -147,7 +147,7 @@ class TicketView(discord.ui.View):
  
 @tasks.loop(hours=720)
 async def message_recrutement_mensuel():
-    ID_SALON_STAFF = 1521077673663660165
+    ID_SALON_STAFF = 1521967842512207932
     channel = bot.get_channel(ID_SALON_STAFF)
  
     if channel:
@@ -493,7 +493,7 @@ async def on_member_join(member):
             f"Bienvenue {member.mention} sur le serveur ! Viens discuter dans le chat !"
         )
  
-    ID_SALON_STAFF = 1521077673663660165
+    ID_SALON_STAFF = 1521967842512207932
     channel_staff = bot.get_channel(ID_SALON_STAFF)
     if channel_staff:
         await channel_staff.send(f"{member.mention}", delete_after=1)
@@ -669,7 +669,7 @@ async def say_error(ctx, error):
  
  
 # =========================================================
-#                  MENU +help AVEC BOUTONS
+#                        MENU +help 
 # =========================================================
  
 def build_main_help_embed():
@@ -778,7 +778,6 @@ async def help_command(ctx):
 @commands.bot_has_permissions(manage_channels=True)
 async def lock(ctx):
     try:
-        # On ne touche qu'à send_messages, on garde tout le reste de l'overwrite existant
         overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
         overwrite.send_messages = False
         await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
@@ -794,15 +793,12 @@ async def lock(ctx):
 @commands.bot_has_permissions(manage_channels=True)
 async def unlock(ctx):
     try:
-        # On récupère l'overwrite existant et on remet UNIQUEMENT send_messages à None (hérité)
         overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
         overwrite.send_messages = None
  
         if overwrite.is_empty():
-            # Si plus aucune permission custom n'est définie, on supprime l'overwrite entièrement
             await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=None)
         else:
-            # Sinon on garde les autres permissions custom déjà en place
             await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
  
         await ctx.send("🔓 Salon déverrouillé.")
@@ -820,7 +816,6 @@ async def clear(ctx, nombre: int):
         return await ctx.send("❌ Le nombre doit être entre 1 et 100.", delete_after=5)
  
     try:
-        # +1 pour supprimer aussi le message de la commande elle-même
         deleted = await ctx.channel.purge(limit=nombre + 1)
         confirmation = await ctx.send(f"🧹 **{len(deleted) - 1}** message(s) supprimé(s).")
         await confirmation.delete(delay=4)
