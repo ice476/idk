@@ -689,7 +689,7 @@ def build_moderation_embed():
     embed = discord.Embed(title="🛡️ Commandes de Modération", color=discord.Color.blurple())
     embed.add_field(name="Membres", value="`+userinfo`, `+ban`, `+unban`, `+kick`, `+mute`, `+unmute`", inline=False)
     embed.add_field(name="Avertissements", value="`+warn`, `+history`", inline=False)
-    embed.add_field(name="Salons", value="`+lock`, `+unlock`, `+clear`, `+say`", inline=False)
+    embed.add_field(name="Salons", value="`+lock`, `+unlock`, `+clear <nombre>`, `+say`", inline=False)
     return embed
  
  
@@ -778,7 +778,10 @@ async def help_command(ctx):
 @commands.bot_has_permissions(manage_channels=True)
 async def lock(ctx):
     try:
-        await ctx.channel.set_permissions(ctx.guild.default_role, send_messages=False)
+        # On ne touche qu'à send_messages, on garde tout le reste de l'overwrite existant
+        overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
+        overwrite.send_messages = False
+        await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
         await ctx.send("🔒 Salon verrouillé.")
     except discord.Forbidden:
         await ctx.send("❌ Je n'ai pas la permission de verrouiller ce salon.")
@@ -791,7 +794,17 @@ async def lock(ctx):
 @commands.bot_has_permissions(manage_channels=True)
 async def unlock(ctx):
     try:
-        await ctx.channel.set_permissions(ctx.guild.default_role, send_messages=None)
+        # On récupère l'overwrite existant et on remet UNIQUEMENT send_messages à None (hérité)
+        overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
+        overwrite.send_messages = None
+ 
+        if overwrite.is_empty():
+            # Si plus aucune permission custom n'est définie, on supprime l'overwrite entièrement
+            await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=None)
+        else:
+            # Sinon on garde les autres permissions custom déjà en place
+            await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
+ 
         await ctx.send("🔓 Salon déverrouillé.")
     except discord.Forbidden:
         await ctx.send("❌ Je n'ai pas la permission de déverrouiller ce salon.")
@@ -800,15 +813,33 @@ async def unlock(ctx):
  
  
 @bot.command()
-@commands.has_permissions(manage_channels=True)
-async def clear(ctx):
-    channel = ctx.channel
-    category = channel.category
-    position = channel.position
+@commands.has_permissions(manage_messages=True)
+@commands.bot_has_permissions(manage_messages=True)
+async def clear(ctx, nombre: int):
+    if nombre < 1 or nombre > 100:
+        return await ctx.send("❌ Le nombre doit être entre 1 et 100.", delete_after=5)
  
-    new_channel = await channel.clone(reason=f"Salon vidé par {ctx.author}")
-    await new_channel.edit(position=position, category=category)
-    await channel.delete(reason=f"Salon vidé par {ctx.author}")
+    try:
+        # +1 pour supprimer aussi le message de la commande elle-même
+        deleted = await ctx.channel.purge(limit=nombre + 1)
+        confirmation = await ctx.send(f"🧹 **{len(deleted) - 1}** message(s) supprimé(s).")
+        await confirmation.delete(delay=4)
+    except discord.Forbidden:
+        await ctx.send("❌ Je n'ai pas la permission de supprimer des messages ici.")
+    except discord.HTTPException as e:
+        await ctx.send(f"❌ Erreur lors de la suppression : `{e}`")
+ 
+ 
+@clear.error
+async def clear_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("❌ Utilise `+clear <nombre>` (ex: `+clear 20`).", delete_after=5)
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send("❌ Le nombre doit être un nombre entier valide.", delete_after=5)
+    elif isinstance(error, commands.MissingPermissions):
+        await ctx.send("❌ Tu n'as pas la permission de supprimer des messages.", delete_after=5)
+    elif isinstance(error, commands.BotMissingPermissions):
+        await ctx.send("❌ Je n'ai pas la permission `Gérer les messages`.", delete_after=5)
  
  
 # =========================================================
@@ -995,4 +1026,3 @@ async def youtube(interaction: discord.Interaction):
  
  
 bot.run(os.getenv("DISCORD_TOKEN"))
- 
